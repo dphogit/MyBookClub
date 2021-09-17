@@ -6,7 +6,7 @@ import {
   PluginDefinition,
 } from "apollo-server-core";
 import express from "express";
-import { IS_PRODUCTION } from "./constants";
+import { IS_PRODUCTION } from "./common/constants";
 import { buildSchema } from "type-graphql";
 import { createConnection } from "typeorm";
 
