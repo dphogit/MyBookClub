@@ -131,6 +131,17 @@ class UserResolver {
 
     return { user };
   }
+
+  @Query(() => User, { nullable: true })
+  me(@Ctx() { req }: CustomContext) {
+    const { userId } = req.session;
+
+    if (!userId) {
+      return null;
+    }
+
+    return User.findOne(userId);
+  }
 }
 
 export default UserResolver;
