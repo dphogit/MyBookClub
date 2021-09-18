@@ -23,9 +23,28 @@ class UserResponse {
 
 @Resolver()
 class UserResolver {
-  @Query(() => String)
-  async hello() {
-    return "Hello Book Club!";
+  @Query(() => UserResponse)
+  async getUserById(@Arg("userId") userId: string): Promise<UserResponse> {
+    let user: User | undefined = undefined;
+
+    try {
+      const userFound = await User.findOne(userId);
+      if (!userFound) {
+        throw new Error("no user"); // Thrown when userId is a valid UUID
+      }
+
+      user = userFound;
+    } catch (error) {
+      // Error code 22P02 is thrown when userId is NOT a valid UUID
+      if ((error.code = "22P02" || error === "no user")) {
+        return {
+          errors: [{ field: "id", message: `No user found with id ${userId}` }],
+        };
+      }
+      console.error(error);
+    }
+
+    return { user };
   }
 
   @Mutation(() => UserResponse)
