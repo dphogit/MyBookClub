@@ -8,12 +8,11 @@ import {
 import express from "express";
 import { COOKIE_NAME, IS_PRODUCTION } from "./common/constants";
 import { buildSchema } from "type-graphql";
-import { createConnection, getRepository } from "typeorm";
+import { createConnection } from "typeorm";
 import session from "express-session";
-
 import UserResolver from "./resolver/UserResolver";
-import { TypeormStore } from "connect-typeorm/out";
-import Session from "./entity/Session";
+import connectPgSimple from "connect-pg-simple";
+import cors from "cors";
 
 dotenv.config();
 
@@ -27,6 +26,13 @@ const main = async () => {
   const app = express();
 
   app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
+
+  app.use(
     session({
       name: COOKIE_NAME,
       resave: false,
@@ -38,10 +44,11 @@ const main = async () => {
         maxAge: COOKIE_MAX_AGE,
         secure: IS_PRODUCTION,
       },
-      store: new TypeormStore({
-        cleanupLimit: 10, // Removes maximum 10 expired sessions
+      store: new (connectPgSimple(session))({
         ttl: SESSION_TIME_TO_LIVE,
-      }).connect(getRepository(Session)),
+        conString: process.env.POSTGRES_URI,
+      }),
+      unset: "destroy",
     })
   );
 
@@ -59,7 +66,7 @@ const main = async () => {
   });
 
   await apolloServer.start();
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen(PORT, () => console.log(`Express started on port: ${PORT}`));
 };

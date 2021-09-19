@@ -13,6 +13,7 @@ import User from "../entity/User";
 import { CustomContext, FieldError } from "../common/types";
 import registerValidation from "../validation/registerValidation";
 import { getRepository } from "typeorm";
+import { COOKIE_NAME } from "../common/constants";
 
 @ObjectType()
 class UserResponse {
@@ -139,8 +140,25 @@ class UserResolver {
     if (!userId) {
       return null;
     }
-
     return User.findOne(userId);
+  }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: CustomContext) {
+    console.log(req.sessionID);
+
+    return new Promise((resolve) =>
+      req.session.destroy((err) => {
+        res.clearCookie(COOKIE_NAME);
+        if (err) {
+          console.log(err);
+          resolve(false);
+          return;
+        }
+
+        resolve(true);
+      })
+    );
   }
 }
 
