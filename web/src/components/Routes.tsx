@@ -1,14 +1,38 @@
 import React from "react";
 import { Switch } from "react-router-dom";
-import { Route } from "react-router";
+import { Redirect, Route } from "react-router";
 import Auth from "../pages/Auth";
+import Reviews from "../pages/Reviews";
+import NewReview from "../pages/NewReview";
+import { useMeQuery } from "../generated/graphql";
 
 const Routes = () => {
+  const { data } = useMeQuery();
+
+  const authenticatedRoutes = [
+    <Route path="/reviews/new" exact key="new-reviews">
+      <NewReview />
+    </Route>,
+    <Route path="/" key="redirect-to-reviews">
+      <Redirect to="/reviews" />
+    </Route>,
+  ];
+
+  const unauthenticatedRoutes = [
+    <Route path="/authenticate" exact key="authenticate">
+      <Auth />
+    </Route>,
+    <Route path="/" key="redirect-to-authentication">
+      <Redirect to="/authenticate" />
+    </Route>,
+  ];
+
   return (
     <Switch>
-      <Route path="/authenticate" exact>
-        <Auth />
+      <Route path="/reviews" exact>
+        <Reviews />
       </Route>
+      {data?.me ? authenticatedRoutes : unauthenticatedRoutes}
     </Switch>
   );
 };

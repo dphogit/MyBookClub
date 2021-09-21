@@ -29,6 +29,7 @@ const Navigation = () => {
     // User is logged in
     authNavItems = (
       <>
+        <NavItem path="/reviews/new">New Review</NavItem>
         <Box color="whiteAlpha.900" mr="12">
           {data.me.email}
         </Box>
@@ -59,7 +60,7 @@ const Navigation = () => {
 
       <Spacer />
       <Flex mr="24">
-        <NavItem path="/">Reviews</NavItem>
+        <NavItem path="/reviews">Reviews</NavItem>
         {authNavItems}
       </Flex>
     </Flex>
