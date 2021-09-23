@@ -67,7 +67,7 @@ const Auth = () => {
 
     // Successful login => Redirect to home page
     console.log("Successful Sign In");
-    history.push("/reviews");
+    history.push("/");
   };
 
   const handleRegister = async (values: AuthFormData) => {

@@ -2,7 +2,7 @@ import React from "react";
 import { Switch } from "react-router-dom";
 import { Redirect, Route } from "react-router";
 import Auth from "../pages/Auth";
-import Reviews from "../pages/Reviews";
+import Search from "../pages/Search";
 import NewReview from "../pages/NewReview";
 import { useMeQuery } from "../generated/graphql";
 
@@ -29,8 +29,8 @@ const Routes = () => {
 
   return (
     <Switch>
-      <Route path="/reviews" exact>
-        <Reviews />
+      <Route path="/" exact>
+        <Search />
       </Route>
       {data?.me ? authenticatedRoutes : unauthenticatedRoutes}
     </Switch>

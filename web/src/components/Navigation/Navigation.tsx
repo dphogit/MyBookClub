@@ -2,17 +2,25 @@ import React from "react";
 import { Box, Flex, Spacer, Heading } from "@chakra-ui/layout";
 import NavItem from "./NavItem";
 import { useMeQuery, useLogoutMutation } from "../../generated/graphql";
-import { Button } from "@chakra-ui/button";
 import { useApolloClient } from "@apollo/client";
 import { useHistory } from "react-router";
+import {
+  Menu,
+  MenuButton,
+  Button,
+  MenuList,
+  MenuGroup,
+  MenuItem,
+} from "@chakra-ui/react";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 
 const Navigation = () => {
   const apolloClient = useApolloClient();
 
   const history = useHistory();
 
-  const { data, loading: meLoading } = useMeQuery();
-  const [logoutMutation, { loading: logoutLoading }] = useLogoutMutation();
+  const { data, loading } = useMeQuery();
+  const [logoutMutation] = useLogoutMutation();
 
   const handleLogout = async () => {
     await logoutMutation();
@@ -20,34 +28,33 @@ const Navigation = () => {
     history.push("/authenticate");
   };
 
-  let authNavItems;
-  if (meLoading) {
-    authNavItems = null; // Executing/Processing the query
+  let authenticatedNavItems;
+  if (loading) {
+    authenticatedNavItems = null; // Executing/Processing the query
   }
 
   if (data?.me) {
     // User is logged in
-    authNavItems = (
+    authenticatedNavItems = (
       <>
         <NavItem path="/reviews/new">New Review</NavItem>
-        <Box color="whiteAlpha.900" mr="12">
-          {data.me.email}
-        </Box>
-        <Button
-          variant="link"
-          color="whiteAlpha.900"
-          fontWeight="normal"
-          style={{ textUnderlineOffset: "0.375rem" }}
-          isLoading={logoutLoading}
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
+        <Menu isLazy>
+          <MenuButton px="4" as={Button} rightIcon={<ChevronDownIcon />}>
+            Profile
+          </MenuButton>
+          <MenuList>
+            <MenuGroup title={data.me.email}>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </MenuGroup>
+          </MenuList>
+        </Menu>
       </>
     );
   } else {
     // User is not logged in
-    authNavItems = <NavItem path="/authenticate">Login / Register</NavItem>;
+    authenticatedNavItems = (
+      <NavItem path="/authenticate">Login / Register</NavItem>
+    );
   }
 
   return (
@@ -59,9 +66,9 @@ const Navigation = () => {
       </Box>
 
       <Spacer />
-      <Flex mr="24">
-        <NavItem path="/reviews">Reviews</NavItem>
-        {authNavItems}
+      <Flex mr="24" alignItems="center">
+        <NavItem path="/">Reviews</NavItem>
+        {authenticatedNavItems}
       </Flex>
     </Flex>
   );
