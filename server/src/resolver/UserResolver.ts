@@ -1,28 +1,22 @@
-import {
-  Resolver,
-  Arg,
-  Mutation,
-  Query,
-  ObjectType,
-  Field,
-  Ctx,
-} from "type-graphql";
+import { Resolver, Arg, Mutation, Query, ObjectType, Ctx } from "type-graphql";
 import { hash, verify } from "argon2";
 
 import User from "../entity/User";
-import { CustomContext, FieldError } from "../common/types";
+import { CustomContext, ResolverResponse } from "../common/types";
 import registerValidation from "../validation/registerValidation";
 import { getRepository } from "typeorm";
 import { COOKIE_NAME } from "../common/constants";
 
-@ObjectType()
-class UserResponse {
-  @Field(() => [FieldError], { nullable: true })
-  errors?: FieldError[];
+// @ObjectType()
+// class UserResponse {
+//   @Field(() => [FieldError], { nullable: true })
+//   errors?: FieldError[];
 
-  @Field(() => User, { nullable: true })
-  user?: User;
-}
+//   @Field(() => User, { nullable: true })
+//   user?: User;
+// }
+@ObjectType()
+class UserResponse extends ResolverResponse(User) {}
 
 @Resolver()
 class UserResolver {
@@ -47,7 +41,7 @@ class UserResolver {
       console.error(error);
     }
 
-    return { user };
+    return { item: user };
   }
 
   @Mutation(() => UserResponse)
@@ -81,7 +75,7 @@ class UserResolver {
       console.error(error);
     }
 
-    return { user };
+    return { item: user };
   }
 
   @Mutation(() => UserResponse)
@@ -130,7 +124,7 @@ class UserResolver {
       console.error(error);
     }
 
-    return { user };
+    return { item: user };
   }
 
   @Query(() => User, { nullable: true })

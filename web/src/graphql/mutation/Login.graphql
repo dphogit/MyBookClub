@@ -4,7 +4,7 @@ mutation Login($email: String!, $password: String!) {
       field
       message
     }
-    user {
+    item {
       id
       email
     }

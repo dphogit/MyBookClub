@@ -14,6 +14,40 @@ export type Scalars = {
   Float: number;
 };
 
+export type BookRating = {
+  __typename?: 'BookRating';
+  createdAt: Scalars['String'];
+  creator: User;
+  creatorId: Scalars['String'];
+  id: Scalars['String'];
+  rating: Scalars['Int'];
+  status: BookStatus;
+  title: Scalars['String'];
+  updatedAt: Scalars['String'];
+  volumeId: Scalars['String'];
+};
+
+export type BookRatingInput = {
+  rating: Scalars['Int'];
+  status: BookStatus;
+  title: Scalars['String'];
+  volumeId: Scalars['String'];
+};
+
+export type BookRatingResponse = {
+  __typename?: 'BookRatingResponse';
+  errors?: Maybe<Array<FieldError>>;
+  item?: Maybe<BookRating>;
+};
+
+export enum BookStatus {
+  Complete = 'COMPLETE',
+  Current = 'CURRENT',
+  Drop = 'DROP',
+  Hold = 'HOLD',
+  Plan = 'PLAN'
+}
+
 export type FieldError = {
   __typename?: 'FieldError';
   field: Scalars['String'];
@@ -22,9 +56,15 @@ export type FieldError = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  createBookRating: BookRatingResponse;
   login: UserResponse;
   logout: Scalars['Boolean'];
   register: UserResponse;
+};
+
+
+export type MutationCreateBookRatingArgs = {
+  bookRatingInput: BookRatingInput;
 };
 
 
@@ -52,6 +92,7 @@ export type QueryGetUserByIdArgs = {
 
 export type User = {
   __typename?: 'User';
+  bookRatings: Array<BookRating>;
   createdAt: Scalars['String'];
   email: Scalars['String'];
   id: Scalars['String'];
@@ -61,7 +102,7 @@ export type User = {
 export type UserResponse = {
   __typename?: 'UserResponse';
   errors?: Maybe<Array<FieldError>>;
-  user?: Maybe<User>;
+  item?: Maybe<User>;
 };
 
 export type LoginMutationVariables = Exact<{
@@ -70,7 +111,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, user?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -83,7 +124,7 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, user?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -98,7 +139,7 @@ export const LoginDocument = gql`
       field
       message
     }
-    user {
+    item {
       id
       email
     }
@@ -169,7 +210,7 @@ export const RegisterDocument = gql`
       field
       message
     }
-    user {
+    item {
       id
       email
     }

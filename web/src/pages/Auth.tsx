@@ -49,7 +49,7 @@ const Auth = () => {
         cache.writeQuery<MeQuery>({
           query: MeDocument,
           data: {
-            me: data?.login.user,
+            me: data?.login.item,
           },
         });
       },

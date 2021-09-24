@@ -1,25 +1,33 @@
 import {
   Arg,
   Ctx,
-  Field,
+  // Field,
   Mutation,
   Resolver,
   UseMiddleware,
   ObjectType,
 } from "type-graphql";
-import { CustomContext, FieldError, BookRatingInput } from "../common/types";
+import {
+  CustomContext,
+  // FieldError,
+  BookRatingInput,
+  ResolverResponse,
+} from "../common/types";
 import BookRating from "../entity/BookRating";
 import isAuthenticated from "../middleware/isAuthenticated";
 import createBookReviewValidation from "../validation/createBookReviewValidation";
 
-@ObjectType()
-class BookRatingResponse {
-  @Field(() => [FieldError], { nullable: true })
-  errors?: FieldError[];
+// @ObjectType()
+// class BookRatingResponse {
+//   @Field(() => [FieldError], { nullable: true })
+//   errors?: FieldError[];
 
-  @Field(() => BookRating, { nullable: true })
-  bookRating?: BookRating;
-}
+//   @Field(() => BookRating, { nullable: true })
+//   bookRating?: BookRating;
+// }
+
+@ObjectType()
+class BookRatingResponse extends ResolverResponse(BookRating) {}
 
 @Resolver()
 class BookRatingResolver {
@@ -80,7 +88,7 @@ class BookRatingResolver {
       console.error(error);
     }
 
-    return { bookRating };
+    return { item: bookRating };
   }
 }
 
