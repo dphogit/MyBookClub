@@ -1,3 +1,8 @@
+export interface Book {
+  volumeInfo: BookData;
+  id: string;
+}
+
 export interface BookData {
   authors?: string[];
   title: string;
@@ -9,5 +14,6 @@ export interface BookData {
   publisher?: string;
   imageLinks?: {
     thumbnail: string;
+    medium: string;
   };
 }

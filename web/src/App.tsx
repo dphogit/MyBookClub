@@ -3,7 +3,7 @@ import { ChakraProvider, theme } from "@chakra-ui/react";
 import Layout from "./components/Layout";
 import Navigation from "./components/Navigation/Navigation";
 import { BrowserRouter } from "react-router-dom";
-import Routes from "./components/Routes";
+import Routes from "./components/Navigation/Routes";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 
 const apolloClient = new ApolloClient({

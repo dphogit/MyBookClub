@@ -5,8 +5,10 @@ import {
   BaseEntity,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from "typeorm";
 import { Field, ObjectType } from "type-graphql";
+import BookRating from "./BookRating";
 
 @ObjectType()
 @Entity()
@@ -21,6 +23,10 @@ class User extends BaseEntity {
 
   @Column({ select: false })
   password: string;
+
+  @Field(() => [BookRating])
+  @OneToMany(() => BookRating, (bookRating) => bookRating.creator)
+  bookRatings: BookRating[];
 
   @Field(() => String)
   @CreateDateColumn()

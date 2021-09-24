@@ -5,8 +5,8 @@ import { Box, SimpleGrid, Text } from "@chakra-ui/layout";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { SearchIcon } from "@chakra-ui/icons";
 import { Button } from "@chakra-ui/button";
-import BookDisplay from "../components/Book/BookDisplay";
-import { BookData } from "../common/types";
+import BookSearchCard from "../components/Book/BookSearchCard";
+import { Book } from "../common/types";
 
 interface SearchInput {
   searched: string;
@@ -16,12 +16,7 @@ interface JSON {
   items: Book[] | undefined;
 }
 
-interface Book {
-  volumeInfo: BookData;
-  id: string;
-}
-
-const Reviews = () => {
+const BookSearch = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [isNotFound, setIsNotFound] = useState(false);
 
@@ -34,10 +29,9 @@ const Reviews = () => {
   const handleSearch: SubmitHandler<SearchInput> = async ({ searched }) => {
     try {
       const trimmedSearch = searched.trim();
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${trimmedSearch}+intitle:${trimmedSearch}&maxResults=12`
-      );
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${trimmedSearch}+intitle:${trimmedSearch}&maxResults=12&fields=kind,items(id,volumeInfo(title,authors,description,publishedDate,pageCount,infoLink,categories,publisher,imageLinks/thumbnail))`;
 
+      const response = await fetch(url);
       const data: JSON = await response.json();
 
       if (data.items) {
@@ -83,13 +77,11 @@ const Reviews = () => {
         <SimpleGrid columns={{ sm: 2, md: 3 }}>
           {isNotFound
             ? "No Results Found"
-            : books.map((book) => (
-                <BookDisplay bookData={book.volumeInfo} key={book.id} />
-              ))}
+            : books.map((book) => <BookSearchCard book={book} key={book.id} />)}
         </SimpleGrid>
       </Box>
     </Box>
   );
 };
 
-export default Reviews;
+export default BookSearch;

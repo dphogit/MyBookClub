@@ -9,10 +9,14 @@ interface ImageDisplayProps {
 }
 
 const ImageDisplay = ({ imageLinks }: ImageDisplayProps) => {
-  const dimensions = { height: "100%" };
+  const dimensions = { height: "100%", width: "100%" };
 
   return imageLinks ? (
-    <Image src={imageLinks.thumbnail} {...dimensions} />
+    <Image
+      src={imageLinks.thumbnail}
+      alt={imageLinks.thumbnail}
+      {...dimensions}
+    />
   ) : (
     <Center bgColor="gray.400" {...dimensions} px="4">
       <Text>No Preview Image</Text>

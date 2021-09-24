@@ -1,18 +1,16 @@
-import { FieldError } from "../common/types";
+import { ValidationResponse } from "../common/types";
 
 interface RegisterInput {
   email: string;
   password: string;
 }
 
-type RegisterValidationResponse = FieldError[] | null;
-
 const MINIMUM_PASSWORD_LENGTH = 4;
 
 const registerValidation = ({
   email,
   password,
-}: RegisterInput): RegisterValidationResponse => {
+}: RegisterInput): ValidationResponse => {
   if (!email.includes("@")) {
     return [
       {

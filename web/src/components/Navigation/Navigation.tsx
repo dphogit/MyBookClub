@@ -37,7 +37,6 @@ const Navigation = () => {
     // User is logged in
     authenticatedNavItems = (
       <>
-        <NavItem path="/reviews/new">New Review</NavItem>
         <Menu isLazy>
           <MenuButton px="4" as={Button} rightIcon={<ChevronDownIcon />}>
             Profile
@@ -58,7 +57,7 @@ const Navigation = () => {
   }
 
   return (
-    <Flex align="center" width="100%" backgroundColor="blue.600" px="24" py="5">
+    <Flex align="center" width="100%" bgColor="blue.600" px="24" py="5">
       <Box>
         <Heading color="whiteAlpha.900" size="lg">
           MyBookClub
@@ -67,7 +66,7 @@ const Navigation = () => {
 
       <Spacer />
       <Flex mr="24" alignItems="center">
-        <NavItem path="/">Reviews</NavItem>
+        <NavItem path="/books">Reviews</NavItem>
         {authenticatedNavItems}
       </Flex>
     </Flex>

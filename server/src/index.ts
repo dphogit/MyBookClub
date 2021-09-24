@@ -10,9 +10,12 @@ import { COOKIE_NAME, IS_PRODUCTION } from "./common/constants";
 import { buildSchema } from "type-graphql";
 import { createConnection } from "typeorm";
 import session from "express-session";
-import UserResolver from "./resolver/UserResolver";
 import connectPgSimple from "connect-pg-simple";
 import cors from "cors";
+import { books } from "@googleapis/books";
+
+import UserResolver from "./resolver/UserResolver";
+import BookRatingResolver from "./resolver/BookRatingResolver";
 
 dotenv.config();
 
@@ -22,6 +25,8 @@ const SESSION_TIME_TO_LIVE = 86400; // 1 Day
 
 const main = async () => {
   await createConnection();
+
+  const googleBooks = books("v1");
 
   const app = express();
 
@@ -59,10 +64,10 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver],
+      resolvers: [UserResolver, BookRatingResolver],
     }),
     plugins,
-    context: ({ req, res }) => ({ req, res }),
+    context: ({ req, res }) => ({ req, res, googleBooks }),
   });
 
   await apolloServer.start();
