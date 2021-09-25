@@ -20,7 +20,7 @@ export type BookRating = {
   creator: User;
   creatorId: Scalars['String'];
   id: Scalars['String'];
-  rating: Scalars['Int'];
+  rating?: Maybe<Scalars['Int']>;
   status: BookStatus;
   title: Scalars['String'];
   updatedAt: Scalars['String'];
@@ -28,7 +28,7 @@ export type BookRating = {
 };
 
 export type BookRatingInput = {
-  rating: Scalars['Int'];
+  rating?: Maybe<Scalars['Int']>;
   status: BookStatus;
   title: Scalars['String'];
   volumeId: Scalars['String'];
@@ -82,12 +82,18 @@ export type MutationRegisterArgs = {
 export type Query = {
   __typename?: 'Query';
   getUserById: UserResponse;
+  haveIRatedAlready: Scalars['Boolean'];
   me?: Maybe<User>;
 };
 
 
 export type QueryGetUserByIdArgs = {
   userId: Scalars['String'];
+};
+
+
+export type QueryHaveIRatedAlreadyArgs = {
+  volumeId: Scalars['String'];
 };
 
 export type User = {
@@ -104,6 +110,13 @@ export type UserResponse = {
   errors?: Maybe<Array<FieldError>>;
   item?: Maybe<User>;
 };
+
+export type CreateBookReviewMutationVariables = Exact<{
+  input: BookRatingInput;
+}>;
+
+
+export type CreateBookReviewMutation = { __typename?: 'Mutation', createBookRating: { __typename?: 'BookRatingResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'BookRating', id: string, volumeId: string, title: string, rating?: Maybe<number>, status: BookStatus }> } };
 
 export type LoginMutationVariables = Exact<{
   email: Scalars['String'];
@@ -126,12 +139,62 @@ export type RegisterMutationVariables = Exact<{
 
 export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
 
+export type HaveIRatedBookYetQueryVariables = Exact<{
+  volumeId: Scalars['String'];
+}>;
+
+
+export type HaveIRatedBookYetQuery = { __typename?: 'Query', haveIRatedAlready: boolean };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { __typename?: 'Query', me?: Maybe<{ __typename?: 'User', id: string, email: string }> };
 
 
+export const CreateBookReviewDocument = gql`
+    mutation CreateBookReview($input: BookRatingInput!) {
+  createBookRating(bookRatingInput: $input) {
+    errors {
+      field
+      message
+    }
+    item {
+      id
+      volumeId
+      title
+      rating
+      status
+    }
+  }
+}
+    `;
+export type CreateBookReviewMutationFn = Apollo.MutationFunction<CreateBookReviewMutation, CreateBookReviewMutationVariables>;
+
+/**
+ * __useCreateBookReviewMutation__
+ *
+ * To run a mutation, you first call `useCreateBookReviewMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBookReviewMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createBookReviewMutation, { data, loading, error }] = useCreateBookReviewMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateBookReviewMutation(baseOptions?: Apollo.MutationHookOptions<CreateBookReviewMutation, CreateBookReviewMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateBookReviewMutation, CreateBookReviewMutationVariables>(CreateBookReviewDocument, options);
+      }
+export type CreateBookReviewMutationHookResult = ReturnType<typeof useCreateBookReviewMutation>;
+export type CreateBookReviewMutationResult = Apollo.MutationResult<CreateBookReviewMutation>;
+export type CreateBookReviewMutationOptions = Apollo.BaseMutationOptions<CreateBookReviewMutation, CreateBookReviewMutationVariables>;
 export const LoginDocument = gql`
     mutation Login($email: String!, $password: String!) {
   login(email: $email, password: $password) {
@@ -244,6 +307,39 @@ export function useRegisterMutation(baseOptions?: Apollo.MutationHookOptions<Reg
 export type RegisterMutationHookResult = ReturnType<typeof useRegisterMutation>;
 export type RegisterMutationResult = Apollo.MutationResult<RegisterMutation>;
 export type RegisterMutationOptions = Apollo.BaseMutationOptions<RegisterMutation, RegisterMutationVariables>;
+export const HaveIRatedBookYetDocument = gql`
+    query HaveIRatedBookYet($volumeId: String!) {
+  haveIRatedAlready(volumeId: $volumeId)
+}
+    `;
+
+/**
+ * __useHaveIRatedBookYetQuery__
+ *
+ * To run a query within a React component, call `useHaveIRatedBookYetQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHaveIRatedBookYetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHaveIRatedBookYetQuery({
+ *   variables: {
+ *      volumeId: // value for 'volumeId'
+ *   },
+ * });
+ */
+export function useHaveIRatedBookYetQuery(baseOptions: Apollo.QueryHookOptions<HaveIRatedBookYetQuery, HaveIRatedBookYetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<HaveIRatedBookYetQuery, HaveIRatedBookYetQueryVariables>(HaveIRatedBookYetDocument, options);
+      }
+export function useHaveIRatedBookYetLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<HaveIRatedBookYetQuery, HaveIRatedBookYetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<HaveIRatedBookYetQuery, HaveIRatedBookYetQueryVariables>(HaveIRatedBookYetDocument, options);
+        }
+export type HaveIRatedBookYetQueryHookResult = ReturnType<typeof useHaveIRatedBookYetQuery>;
+export type HaveIRatedBookYetLazyQueryHookResult = ReturnType<typeof useHaveIRatedBookYetLazyQuery>;
+export type HaveIRatedBookYetQueryResult = Apollo.QueryResult<HaveIRatedBookYetQuery, HaveIRatedBookYetQueryVariables>;
 export const MeDocument = gql`
     query Me {
   me {

@@ -20,7 +20,7 @@ export class BookRatingInput {
   @Field()
   title: string;
 
-  @Field(() => Int)
+  @Field(() => Int, { nullable: true })
   rating: number;
 
   @Field(() => BookStatus)

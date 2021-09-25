@@ -23,15 +23,15 @@ class BookRating extends BaseEntity {
   id: string;
 
   @Field()
-  @Column({ unique: true })
+  @Column()
   volumeId: string;
 
   @Field()
   @Column()
   title: string;
 
-  @Field(() => Int)
-  @Column({ type: "int" })
+  @Field(() => Int, { nullable: true })
+  @Column({ type: "int", nullable: true })
   rating: number;
 
   @Field(() => BookStatus)

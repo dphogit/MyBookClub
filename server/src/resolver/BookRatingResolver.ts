@@ -1,15 +1,14 @@
 import {
   Arg,
   Ctx,
-  // Field,
   Mutation,
   Resolver,
   UseMiddleware,
   ObjectType,
+  Query,
 } from "type-graphql";
 import {
   CustomContext,
-  // FieldError,
   BookRatingInput,
   ResolverResponse,
 } from "../common/types";
@@ -17,19 +16,10 @@ import BookRating from "../entity/BookRating";
 import isAuthenticated from "../middleware/isAuthenticated";
 import createBookReviewValidation from "../validation/createBookReviewValidation";
 
-// @ObjectType()
-// class BookRatingResponse {
-//   @Field(() => [FieldError], { nullable: true })
-//   errors?: FieldError[];
-
-//   @Field(() => BookRating, { nullable: true })
-//   bookRating?: BookRating;
-// }
-
 @ObjectType()
 class BookRatingResponse extends ResolverResponse(BookRating) {}
 
-@Resolver()
+@Resolver(() => BookRating)
 class BookRatingResolver {
   @Mutation(() => BookRatingResponse)
   @UseMiddleware(isAuthenticated)
@@ -47,11 +37,11 @@ class BookRatingResolver {
     }
 
     try {
-      // Check if the volumeId already exists in the database
+      // Check if the volumeId already exists in the database and belongs to the user
       const foundBookRating = await BookRating.findOne({
         where: { volumeId: bookRatingInput.volumeId },
       });
-      if (foundBookRating) {
+      if (foundBookRating?.creatorId === req.session.userId) {
         return {
           errors: [
             {
@@ -89,6 +79,26 @@ class BookRatingResolver {
     }
 
     return { item: bookRating };
+  }
+
+  @Query(() => Boolean)
+  async haveIRatedAlready(
+    @Ctx() { req }: CustomContext,
+    @Arg("volumeId") volumeId: string
+  ): Promise<boolean> {
+    if (!req.session.id) {
+      return false; // User may not be logged in
+    }
+
+    try {
+      // Find a book and turn it into boolean. Found => True, Not Found => False
+      return !!(await BookRating.findOne({
+        where: { volumeId: volumeId, creatorId: req.session.userId },
+      }));
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
   }
 }
 

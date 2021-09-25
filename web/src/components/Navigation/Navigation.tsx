@@ -66,7 +66,7 @@ const Navigation = () => {
 
       <Spacer />
       <Flex mr="24" alignItems="center">
-        <NavItem path="/books">Reviews</NavItem>
+        <NavItem path="/books">Explore Books</NavItem>
         {authenticatedNavItems}
       </Flex>
     </Flex>

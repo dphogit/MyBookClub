@@ -1,0 +1,3 @@
+query HaveIRatedBookYet($volumeId: String!) {
+  haveIRatedAlready(volumeId: $volumeId)
+}

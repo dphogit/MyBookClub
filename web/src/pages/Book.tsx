@@ -20,15 +20,23 @@ import {
   FormLabel,
   FormHelperText,
   FormErrorMessage,
+  ButtonProps,
+  useToast,
 } from "@chakra-ui/react";
 import parse from "react-html-parser";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, EditIcon, LockIcon } from "@chakra-ui/icons";
 import {
   useCreateBookReviewMutation,
   BookStatus,
   BookRatingInput,
+  HaveIRatedBookYetDocument,
 } from "../generated/graphql";
 import { SubmitHandler, useForm } from "react-hook-form";
+import {
+  useMeQuery,
+  useHaveIRatedBookYetQuery,
+  HaveIRatedBookYetQuery,
+} from "../generated/graphql";
 
 interface Params {
   id: string;
@@ -39,16 +47,22 @@ type AddBookData = {
   rating: number | null;
 };
 
+type ReviewState = "UNAUTHENTICATED" | "EDIT" | "ADD";
+
 const ADD_BOOK_REVIEW_FORM_ID = "add-book-review";
 
 const Book = () => {
-  const { id } = useParams<Params>();
+  const { id: volumeId } = useParams<Params>();
 
   const [book, setBook] = useState<BookType | null>(null);
+  const [reviewState, setReviewState] =
+    useState<ReviewState>("UNAUTHENTICATED");
 
-  const addBookToListRef = useRef<HTMLButtonElement>(null);
+  const openModalRef = useRef<HTMLButtonElement>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const toast = useToast();
 
   const {
     register,
@@ -61,9 +75,15 @@ const Book = () => {
   const watchSelectStatus = watch("status");
 
   const [createBookReviewMutation] = useCreateBookReviewMutation();
+  const { data: meData, loading: meLoading } = useMeQuery();
+  const { data: ratedYetData } = useHaveIRatedBookYetQuery({
+    variables: {
+      volumeId,
+    },
+  });
 
   useEffect(() => {
-    const url = `https://www.googleapis.com/books/v1/volumes/${id}?fields=id,volumeInfo(title,authors,description,publishedDate,pageCount,infoLink,categories,publisher,imageLinks/thumbnail)`;
+    const url = `https://www.googleapis.com/books/v1/volumes/${volumeId}?fields=id,volumeInfo(title,authors,description,publishedDate,pageCount,infoLink,categories,publisher,imageLinks/thumbnail)`;
 
     try {
       fetch(url).then(async (res) => {
@@ -73,9 +93,18 @@ const Book = () => {
         setBook(data);
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
-  }, [id]);
+  }, [volumeId]);
+
+  useEffect(() => {
+    if (meData?.me && ratedYetData) {
+      ratedYetData.haveIRatedAlready
+        ? setReviewState("EDIT")
+        : setReviewState("ADD");
+    }
+    // TODO Implement Edit Mode, Need To Load Existing Data And Set The Value Of Forms
+  }, [meData, ratedYetData]);
 
   useEffect(() => {
     if (watchSelectStatus === BookStatus.Plan) {
@@ -88,6 +117,7 @@ const Book = () => {
   }
 
   const handleAddBookSubmit: SubmitHandler<AddBookData> = async (values) => {
+    // TODO Check For Editing Mode And Adapt Query And Response Handle Here
     const bookRatingInput: BookRatingInput = {
       status: values.status,
       rating: values.rating ? +values.rating : null,
@@ -97,18 +127,43 @@ const Book = () => {
     try {
       const createBookResponse = await createBookReviewMutation({
         variables: { input: bookRatingInput },
+        update: (cache) => {
+          // Update the cache to immediately show changes on modal button
+          cache.writeQuery<HaveIRatedBookYetQuery>({
+            query: HaveIRatedBookYetDocument,
+            variables: { volumeId },
+            data: {
+              haveIRatedAlready: true,
+            },
+          });
+          console.log(cache);
+        },
       });
 
+      // Validation of user errors
       if (createBookResponse.data?.createBookRating.errors) {
         createBookResponse.data.createBookRating.errors.forEach(
           ({ field, message }) => {
             if (field === "rating" || field === "status") {
               setError(field, { message });
             }
+            if (field === "volumeId") {
+              throw new Error("VolumeId already exists in your list");
+            }
           }
         );
         return;
       }
+
+      // Successfully added review
+      toast({
+        title: "Review added",
+        description: "We've saved your review",
+        duration: 5000,
+        position: "bottom",
+        status: "success",
+        isClosable: true,
+      });
 
       console.log(
         "Added Book: " +
@@ -116,15 +171,36 @@ const Book = () => {
       );
       onClose();
     } catch (error) {
-      console.error(error); // Not Authenticated catches here
+      console.error(error);
     }
   };
 
-  /*
-   * TODO
-   * Better UX of unauthenticated user should not be able to open modal.
-   * Backend already prevent and error is handled.
-   */
+  // Adapt button depending on what their review status of the book is.
+  let openModalBtnProps: ButtonProps;
+  switch (reviewState) {
+    case "UNAUTHENTICATED":
+      openModalBtnProps = {
+        children: "Sign In To Add",
+        rightIcon: <LockIcon />,
+        disabled: true,
+      };
+      break;
+    case "ADD":
+      openModalBtnProps = {
+        children: "Add To Read List",
+        rightIcon: <AddIcon />,
+      };
+      break;
+    case "EDIT":
+      openModalBtnProps = {
+        children: "Edit My Review",
+        rightIcon: <EditIcon />,
+      };
+      break;
+    default:
+      throw new Error("Review State Error"); // Should not reach here
+  }
+
   return (
     <>
       <Box rounded="lg" boxShadow="xl" my="16" p="8">
@@ -154,29 +230,29 @@ const Book = () => {
             <Button
               w="100%"
               colorScheme="blue"
-              rightIcon={<AddIcon />}
               onClick={onOpen}
-              ref={addBookToListRef}
-            >
-              Add To Read List
-            </Button>
+              isLoading={meLoading}
+              ref={openModalRef}
+              {...openModalBtnProps}
+            />
           </Stack>
           <Stack ml="12" px="8" flexGrow={2} spacing="4">
             {!!book.volumeInfo.categories && (
               <Box>
                 {book.volumeInfo.categories?.map((category) => (
-                  <Tag key={category} colorScheme="blue">
+                  <Tag key={category} colorScheme="blue" mb="3" mr="3">
                     {category}
                   </Tag>
                 ))}
               </Box>
             )}
+            {/* TODO Text Is Not Sanitized And Comes Straight From API */}
             <Box>{parse(book.volumeInfo.description)}</Box>
           </Stack>
         </Grid>
       </Box>
       <Modal
-        finalFocusRef={addBookToListRef}
+        finalFocusRef={openModalRef}
         isOpen={isOpen}
         onClose={onClose}
         size="xl"

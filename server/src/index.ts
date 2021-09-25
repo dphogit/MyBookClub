@@ -67,7 +67,11 @@ const main = async () => {
       resolvers: [UserResolver, BookRatingResolver],
     }),
     plugins,
-    context: ({ req, res }) => ({ req, res, googleBooks }),
+    context: ({ req, res }) => ({
+      req,
+      res,
+      googleBooks,
+    }),
   });
 
   await apolloServer.start();

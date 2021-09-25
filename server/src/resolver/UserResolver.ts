@@ -7,19 +7,13 @@ import registerValidation from "../validation/registerValidation";
 import { getRepository } from "typeorm";
 import { COOKIE_NAME } from "../common/constants";
 
-// @ObjectType()
-// class UserResponse {
-//   @Field(() => [FieldError], { nullable: true })
-//   errors?: FieldError[];
-
-//   @Field(() => User, { nullable: true })
-//   user?: User;
-// }
 @ObjectType()
 class UserResponse extends ResolverResponse(User) {}
 
-@Resolver()
+@Resolver(() => User)
 class UserResolver {
+  // TODO Once usernames are added, need to change to a field resolver for email
+  // so other users cannot see/request other peoples email.
   @Query(() => UserResponse)
   async getUserById(@Arg("userId") userId: string): Promise<UserResponse> {
     let user: User | undefined = undefined;

@@ -1,0 +1,15 @@
+mutation CreateBookReview($input: BookRatingInput!) {
+  createBookRating(bookRatingInput: $input) {
+    errors {
+      field
+      message
+    }
+    item {
+      id
+      volumeId
+      title
+      rating
+      status
+    }
+  }
+}
