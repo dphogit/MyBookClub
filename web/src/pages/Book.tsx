@@ -34,7 +34,10 @@ import {
 } from "../generated/graphql";
 import { SubmitHandler, useForm } from "react-hook-form";
 import sanitzeHtml from "sanitize-html";
-import { useEditBookRatingMutation } from "../generated/graphql";
+import {
+  useEditBookRatingMutation,
+  useDeleteBookRatingMutation,
+} from "../generated/graphql";
 import {
   GetBookRatingDocument,
   GetBookRatingQuery,
@@ -72,12 +75,14 @@ const Book = () => {
     watch,
     setValue,
     setError,
+    reset,
     formState: { isSubmitting, errors },
   } = useForm<AddBookData>();
   const watchSelectStatus = watch("status");
 
   const [createBookRatingMutation] = useCreateBookRatingMutation();
   const [editBookRatingMutation] = useEditBookRatingMutation();
+  const [deleteBookRatingMutation] = useDeleteBookRatingMutation();
 
   const { data: meData, loading: meLoading } = useMeQuery();
   const { data: bookRatingData } = useGetBookRatingQuery({
@@ -219,9 +224,9 @@ const Book = () => {
 
       // Successfully saved review
       toast({
-        title: reviewState === "ADD" ? "Rating added" : "Rating Edited",
+        title: reviewState === "ADD" ? "Rating added" : "Rating edited",
         description: "We've saved your rating",
-        duration: 5000,
+        duration: 9000,
         position: "bottom",
         status: "success",
         isClosable: true,
@@ -230,6 +235,33 @@ const Book = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleDelete = async () => {
+    await deleteBookRatingMutation({
+      variables: { volumeId },
+      update: (cache) => {
+        cache.evict({
+          id: "ROOT_QUERY",
+          fieldName: "getBookRating",
+          args: { volumeId },
+        });
+        cache.gc();
+      },
+    });
+
+    reset({ rating: null, status: undefined }); // Reset the values of the form
+
+    toast({
+      title: "Rating removed",
+      description: "We've removed your rating",
+      duration: 9000,
+      position: "bottom",
+      status: "success",
+      isClosable: true,
+    });
+    console.log("Removed: ", volumeId);
+    onClose();
   };
 
   // Adapt button depending on what their review status of the book is.
@@ -368,6 +400,11 @@ const Book = () => {
             </form>
           </ModalBody>
           <ModalFooter>
+            {reviewState === "EDIT" && (
+              <Button colorScheme="red" mr="auto" onClick={handleDelete}>
+                Delete
+              </Button>
+            )}
             <Button colorScheme="gray" mr={3} onClick={onClose}>
               Cancel
             </Button>

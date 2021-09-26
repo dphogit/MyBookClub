@@ -151,20 +151,27 @@ class BookRatingResolver {
     return { item: bookRating };
   }
 
-  @Query(() => Boolean)
-  async haveIRatedAlready(
-    @Ctx() { req }: CustomContext,
-    @Arg("volumeId") volumeId: string
+  @Mutation(() => Boolean)
+  @UseMiddleware(isAuthenticated)
+  async deleteBookRating(
+    @Arg("volumeId") volumeId: string,
+    @Ctx() { req }: CustomContext
   ): Promise<boolean> {
-    if (!req.session.id) {
-      return false; // User may not be logged in
-    }
-
     try {
-      // Find a book and turn it into boolean. Found => True, Not Found => False
-      return !!(await BookRating.findOne({
-        where: { volumeId: volumeId, creatorId: req.session.userId },
-      }));
+      const bookRating = await BookRating.findOne({
+        where: { volumeId, creatorId: req.session.userId },
+      });
+
+      if (!bookRating) {
+        return false;
+      }
+
+      if (bookRating.creatorId !== req.session.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      await BookRating.delete({ volumeId, creatorId: req.session.userId });
+      return true;
     } catch (error) {
       console.error(error);
       return false;

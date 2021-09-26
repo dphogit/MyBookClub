@@ -1,0 +1,3 @@
+mutation DeleteBookRating($volumeId: String!) {
+  deleteBookRating(volumeId: $volumeId)
+}

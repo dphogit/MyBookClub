@@ -53,7 +53,7 @@ export type CustomContext = {
 export enum BookStatus {
   PLAN = "Planning To Read",
   DROP = "Dropped",
-  CURRENT = "Currently Watching",
+  CURRENT = "Currently Reading",
   HOLD = "On Hold",
   COMPLETE = "Completed",
 }
