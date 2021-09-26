@@ -26,16 +26,18 @@ import {
 import parse from "react-html-parser";
 import { AddIcon, EditIcon, LockIcon } from "@chakra-ui/icons";
 import {
-  useCreateBookReviewMutation,
+  useCreateBookRatingMutation,
   BookStatus,
   BookRatingInput,
-  HaveIRatedBookYetDocument,
+  useMeQuery,
+  useGetBookRatingQuery,
 } from "../generated/graphql";
 import { SubmitHandler, useForm } from "react-hook-form";
+import sanitzeHtml from "sanitize-html";
+import { useEditBookRatingMutation } from "../generated/graphql";
 import {
-  useMeQuery,
-  useHaveIRatedBookYetQuery,
-  HaveIRatedBookYetQuery,
+  GetBookRatingDocument,
+  GetBookRatingQuery,
 } from "../generated/graphql";
 
 interface Params {
@@ -74,9 +76,11 @@ const Book = () => {
   } = useForm<AddBookData>();
   const watchSelectStatus = watch("status");
 
-  const [createBookReviewMutation] = useCreateBookReviewMutation();
+  const [createBookRatingMutation] = useCreateBookRatingMutation();
+  const [editBookRatingMutation] = useEditBookRatingMutation();
+
   const { data: meData, loading: meLoading } = useMeQuery();
-  const { data: ratedYetData } = useHaveIRatedBookYetQuery({
+  const { data: bookRatingData } = useGetBookRatingQuery({
     variables: {
       volumeId,
     },
@@ -98,13 +102,19 @@ const Book = () => {
   }, [volumeId]);
 
   useEffect(() => {
-    if (meData?.me && ratedYetData) {
-      ratedYetData.haveIRatedAlready
-        ? setReviewState("EDIT")
-        : setReviewState("ADD");
+    // User already has rated, if this is the case they must also be authenticated
+    if (bookRatingData?.getBookRating) {
+      setReviewState("EDIT"); // Preset the modal values here
+      setValue("status", bookRatingData.getBookRating.status);
+      setValue("rating", bookRatingData.getBookRating.rating as number | null);
+      return;
     }
-    // TODO Implement Edit Mode, Need To Load Existing Data And Set The Value Of Forms
-  }, [meData, ratedYetData]);
+
+    // User is authenticated and has not rated, will need to rate to add to list
+    if (meData?.me) {
+      setReviewState("ADD");
+    }
+  }, [bookRatingData, meData, setValue]);
 
   useEffect(() => {
     if (watchSelectStatus === BookStatus.Plan) {
@@ -116,59 +126,106 @@ const Book = () => {
     return <Heading>Loading...</Heading>;
   }
 
-  const handleAddBookSubmit: SubmitHandler<AddBookData> = async (values) => {
-    // TODO Check For Editing Mode And Adapt Query And Response Handle Here
+  const handleReviewSubmit: SubmitHandler<AddBookData> = async (values) => {
     const bookRatingInput: BookRatingInput = {
       status: values.status,
       rating: values.rating ? +values.rating : null,
       title: book.volumeInfo.title,
       volumeId: book.id,
     };
-    try {
-      const createBookResponse = await createBookReviewMutation({
-        variables: { input: bookRatingInput },
-        update: (cache) => {
-          // Update the cache to immediately show changes on modal button
-          cache.writeQuery<HaveIRatedBookYetQuery>({
-            query: HaveIRatedBookYetDocument,
-            variables: { volumeId },
-            data: {
-              haveIRatedAlready: true,
-            },
-          });
-          console.log(cache);
-        },
-      });
 
-      // Validation of user errors
-      if (createBookResponse.data?.createBookRating.errors) {
-        createBookResponse.data.createBookRating.errors.forEach(
-          ({ field, message }) => {
-            if (field === "rating" || field === "status") {
-              setError(field, { message });
+    try {
+      if (reviewState === "ADD") {
+        const createBookResponse = await createBookRatingMutation({
+          variables: { input: bookRatingInput },
+          update: (cache, { data }) => {
+            // Update the cache to immediately show changes on modal button
+            if (!data || !data.createBookRating.item) {
+              return;
             }
-            if (field === "volumeId") {
-              throw new Error("VolumeId already exists in your list");
+
+            cache.writeQuery<GetBookRatingQuery>({
+              query: GetBookRatingDocument,
+              variables: { volumeId },
+              data: {
+                getBookRating: {
+                  ...data.createBookRating.item,
+                  __typename: "BookRating",
+                },
+              },
+            });
+          },
+        });
+
+        // Server side validation of user errors
+        if (createBookResponse.data?.createBookRating.errors) {
+          createBookResponse.data.createBookRating.errors.forEach(
+            ({ field, message }) => {
+              if (field === "rating" || field === "status") {
+                setError(field, { message });
+              }
+              if (field === "volumeId") {
+                // Client side should protect this error from occuring
+                throw new Error("VolumeId already exists in your list");
+              }
             }
-          }
-        );
-        return;
+          );
+          return;
+        }
+
+        console.log("Added: ", createBookResponse.data?.createBookRating.item);
+      } else if (reviewState === "EDIT") {
+        const editBookResponse = await editBookRatingMutation({
+          variables: { editInput: bookRatingInput },
+          update: (cache, { data }) => {
+            // Update the cache to immediately reflect changes upon opening modal
+            if (!data || !data.editBookRating.item) {
+              return;
+            }
+
+            cache.writeQuery<GetBookRatingQuery>({
+              query: GetBookRatingDocument,
+              variables: { volumeId },
+              data: {
+                getBookRating: {
+                  ...data.editBookRating.item,
+                  __typename: "BookRating",
+                },
+              },
+            });
+          },
+        });
+
+        // Server side validation of user errors
+        if (editBookResponse.data?.editBookRating.errors) {
+          editBookResponse.data.editBookRating.errors.forEach(
+            ({ field, message }) => {
+              if (field === "rating" || field === "status") {
+                setError(field, { message });
+              }
+              if (field === "volumeId") {
+                // Client side should protect this error from occuring
+                throw new Error(
+                  "No book with that volumeId can be found on your list"
+                );
+              }
+            }
+          );
+          return;
+        }
+
+        console.log("Edited: ", editBookResponse.data?.editBookRating.item);
       }
 
-      // Successfully added review
+      // Successfully saved review
       toast({
-        title: "Review added",
-        description: "We've saved your review",
+        title: reviewState === "ADD" ? "Rating added" : "Rating Edited",
+        description: "We've saved your rating",
         duration: 5000,
         position: "bottom",
         status: "success",
         isClosable: true,
       });
-
-      console.log(
-        "Added Book: " +
-          JSON.stringify(createBookResponse.data?.createBookRating.item)
-      );
       onClose();
     } catch (error) {
       console.error(error);
@@ -198,6 +255,7 @@ const Book = () => {
       };
       break;
     default:
+      console.log("Error is here");
       throw new Error("Review State Error"); // Should not reach here
   }
 
@@ -246,8 +304,7 @@ const Book = () => {
                 ))}
               </Box>
             )}
-            {/* TODO Text Is Not Sanitized And Comes Straight From API */}
-            <Box>{parse(book.volumeInfo.description)}</Box>
+            <Box>{parse(sanitzeHtml(book.volumeInfo.description))}</Box>
           </Stack>
         </Grid>
       </Box>
@@ -264,7 +321,7 @@ const Book = () => {
           <ModalBody>
             <form
               id={ADD_BOOK_REVIEW_FORM_ID}
-              onSubmit={handleSubmit(handleAddBookSubmit)}
+              onSubmit={handleSubmit(handleReviewSubmit)}
             >
               <FormControl isRequired my="4">
                 <FormLabel>Status</FormLabel>

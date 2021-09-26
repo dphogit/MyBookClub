@@ -59,7 +59,14 @@ const main = async () => {
 
   const plugins: PluginDefinition[] = [];
   if (!IS_PRODUCTION) {
-    plugins.push(ApolloServerPluginLandingPageGraphQLPlayground());
+    plugins.push(
+      ApolloServerPluginLandingPageGraphQLPlayground({
+        settings: {
+          "schema.polling.enable": false,
+          "request.credentials": "include",
+        },
+      })
+    );
   }
 
   const apolloServer = new ApolloServer({

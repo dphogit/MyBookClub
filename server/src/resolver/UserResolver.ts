@@ -132,8 +132,8 @@ class UserResolver {
   }
 
   @Mutation(() => Boolean)
-  logout(@Ctx() { req, res }: CustomContext) {
-    return new Promise((resolve) =>
+  logout(@Ctx() { req, res }: CustomContext): Promise<Boolean> {
+    return new Promise<Boolean>((resolve) =>
       req.session.destroy((err) => {
         res.clearCookie(COOKIE_NAME);
         if (err) {

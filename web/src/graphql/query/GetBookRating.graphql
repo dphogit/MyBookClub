@@ -1,0 +1,10 @@
+query GetBookRating($volumeId: String!) {
+  getBookRating(volumeId: $volumeId) {
+    id
+    volumeId
+    title
+    rating
+    status
+    creatorId
+  }
+}

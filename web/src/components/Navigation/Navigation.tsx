@@ -23,9 +23,13 @@ const Navigation = () => {
   const [logoutMutation] = useLogoutMutation();
 
   const handleLogout = async () => {
-    await logoutMutation();
-    await apolloClient.resetStore();
-    history.push("/authenticate");
+    try {
+      await logoutMutation();
+      await apolloClient.resetStore();
+      history.push("/authenticate");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   let authenticatedNavItems;

@@ -4,7 +4,7 @@ import {
   BookStatus,
 } from "../common/types";
 
-const MINIMUM_RATING = 0;
+const MINIMUM_RATING = 1;
 const MAXIMUM_RATING = 5;
 
 const registerValidation = ({
@@ -15,7 +15,7 @@ const registerValidation = ({
     return [
       {
         field: "rating",
-        message: "rating must be between 0 and 5 inclusive",
+        message: `rating must be between ${MINIMUM_RATING} and ${MAXIMUM_RATING} inclusive`,
       },
     ];
   }

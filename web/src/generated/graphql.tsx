@@ -57,6 +57,7 @@ export type FieldError = {
 export type Mutation = {
   __typename?: 'Mutation';
   createBookRating: BookRatingResponse;
+  editBookRating: BookRatingResponse;
   login: UserResponse;
   logout: Scalars['Boolean'];
   register: UserResponse;
@@ -64,6 +65,11 @@ export type Mutation = {
 
 
 export type MutationCreateBookRatingArgs = {
+  bookRatingInput: BookRatingInput;
+};
+
+
+export type MutationEditBookRatingArgs = {
   bookRatingInput: BookRatingInput;
 };
 
@@ -81,9 +87,15 @@ export type MutationRegisterArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getBookRating?: Maybe<BookRating>;
   getUserById: UserResponse;
   haveIRatedAlready: Scalars['Boolean'];
   me?: Maybe<User>;
+};
+
+
+export type QueryGetBookRatingArgs = {
+  volumeId: Scalars['String'];
 };
 
 
@@ -111,12 +123,19 @@ export type UserResponse = {
   item?: Maybe<User>;
 };
 
-export type CreateBookReviewMutationVariables = Exact<{
+export type CreateBookRatingMutationVariables = Exact<{
   input: BookRatingInput;
 }>;
 
 
-export type CreateBookReviewMutation = { __typename?: 'Mutation', createBookRating: { __typename?: 'BookRatingResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'BookRating', id: string, volumeId: string, title: string, rating?: Maybe<number>, status: BookStatus }> } };
+export type CreateBookRatingMutation = { __typename?: 'Mutation', createBookRating: { __typename?: 'BookRatingResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'BookRating', id: string, volumeId: string, title: string, rating?: Maybe<number>, status: BookStatus, creatorId: string }> } };
+
+export type EditBookRatingMutationVariables = Exact<{
+  editInput: BookRatingInput;
+}>;
+
+
+export type EditBookRatingMutation = { __typename?: 'Mutation', editBookRating: { __typename?: 'BookRatingResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'BookRating', id: string, volumeId: string, title: string, rating?: Maybe<number>, status: BookStatus, creatorId: string }> } };
 
 export type LoginMutationVariables = Exact<{
   email: Scalars['String'];
@@ -139,6 +158,13 @@ export type RegisterMutationVariables = Exact<{
 
 export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>>, item?: Maybe<{ __typename?: 'User', id: string, email: string }> } };
 
+export type GetBookRatingQueryVariables = Exact<{
+  volumeId: Scalars['String'];
+}>;
+
+
+export type GetBookRatingQuery = { __typename?: 'Query', getBookRating?: Maybe<{ __typename?: 'BookRating', id: string, volumeId: string, title: string, rating?: Maybe<number>, status: BookStatus, creatorId: string }> };
+
 export type HaveIRatedBookYetQueryVariables = Exact<{
   volumeId: Scalars['String'];
 }>;
@@ -152,8 +178,8 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 export type MeQuery = { __typename?: 'Query', me?: Maybe<{ __typename?: 'User', id: string, email: string }> };
 
 
-export const CreateBookReviewDocument = gql`
-    mutation CreateBookReview($input: BookRatingInput!) {
+export const CreateBookRatingDocument = gql`
+    mutation CreateBookRating($input: BookRatingInput!) {
   createBookRating(bookRatingInput: $input) {
     errors {
       field
@@ -165,36 +191,81 @@ export const CreateBookReviewDocument = gql`
       title
       rating
       status
+      creatorId
     }
   }
 }
     `;
-export type CreateBookReviewMutationFn = Apollo.MutationFunction<CreateBookReviewMutation, CreateBookReviewMutationVariables>;
+export type CreateBookRatingMutationFn = Apollo.MutationFunction<CreateBookRatingMutation, CreateBookRatingMutationVariables>;
 
 /**
- * __useCreateBookReviewMutation__
+ * __useCreateBookRatingMutation__
  *
- * To run a mutation, you first call `useCreateBookReviewMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateBookReviewMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useCreateBookRatingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBookRatingMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [createBookReviewMutation, { data, loading, error }] = useCreateBookReviewMutation({
+ * const [createBookRatingMutation, { data, loading, error }] = useCreateBookRatingMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useCreateBookReviewMutation(baseOptions?: Apollo.MutationHookOptions<CreateBookReviewMutation, CreateBookReviewMutationVariables>) {
+export function useCreateBookRatingMutation(baseOptions?: Apollo.MutationHookOptions<CreateBookRatingMutation, CreateBookRatingMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreateBookReviewMutation, CreateBookReviewMutationVariables>(CreateBookReviewDocument, options);
+        return Apollo.useMutation<CreateBookRatingMutation, CreateBookRatingMutationVariables>(CreateBookRatingDocument, options);
       }
-export type CreateBookReviewMutationHookResult = ReturnType<typeof useCreateBookReviewMutation>;
-export type CreateBookReviewMutationResult = Apollo.MutationResult<CreateBookReviewMutation>;
-export type CreateBookReviewMutationOptions = Apollo.BaseMutationOptions<CreateBookReviewMutation, CreateBookReviewMutationVariables>;
+export type CreateBookRatingMutationHookResult = ReturnType<typeof useCreateBookRatingMutation>;
+export type CreateBookRatingMutationResult = Apollo.MutationResult<CreateBookRatingMutation>;
+export type CreateBookRatingMutationOptions = Apollo.BaseMutationOptions<CreateBookRatingMutation, CreateBookRatingMutationVariables>;
+export const EditBookRatingDocument = gql`
+    mutation EditBookRating($editInput: BookRatingInput!) {
+  editBookRating(bookRatingInput: $editInput) {
+    errors {
+      field
+      message
+    }
+    item {
+      id
+      volumeId
+      title
+      rating
+      status
+      creatorId
+    }
+  }
+}
+    `;
+export type EditBookRatingMutationFn = Apollo.MutationFunction<EditBookRatingMutation, EditBookRatingMutationVariables>;
+
+/**
+ * __useEditBookRatingMutation__
+ *
+ * To run a mutation, you first call `useEditBookRatingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEditBookRatingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [editBookRatingMutation, { data, loading, error }] = useEditBookRatingMutation({
+ *   variables: {
+ *      editInput: // value for 'editInput'
+ *   },
+ * });
+ */
+export function useEditBookRatingMutation(baseOptions?: Apollo.MutationHookOptions<EditBookRatingMutation, EditBookRatingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<EditBookRatingMutation, EditBookRatingMutationVariables>(EditBookRatingDocument, options);
+      }
+export type EditBookRatingMutationHookResult = ReturnType<typeof useEditBookRatingMutation>;
+export type EditBookRatingMutationResult = Apollo.MutationResult<EditBookRatingMutation>;
+export type EditBookRatingMutationOptions = Apollo.BaseMutationOptions<EditBookRatingMutation, EditBookRatingMutationVariables>;
 export const LoginDocument = gql`
     mutation Login($email: String!, $password: String!) {
   login(email: $email, password: $password) {
@@ -307,6 +378,46 @@ export function useRegisterMutation(baseOptions?: Apollo.MutationHookOptions<Reg
 export type RegisterMutationHookResult = ReturnType<typeof useRegisterMutation>;
 export type RegisterMutationResult = Apollo.MutationResult<RegisterMutation>;
 export type RegisterMutationOptions = Apollo.BaseMutationOptions<RegisterMutation, RegisterMutationVariables>;
+export const GetBookRatingDocument = gql`
+    query GetBookRating($volumeId: String!) {
+  getBookRating(volumeId: $volumeId) {
+    id
+    volumeId
+    title
+    rating
+    status
+    creatorId
+  }
+}
+    `;
+
+/**
+ * __useGetBookRatingQuery__
+ *
+ * To run a query within a React component, call `useGetBookRatingQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetBookRatingQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetBookRatingQuery({
+ *   variables: {
+ *      volumeId: // value for 'volumeId'
+ *   },
+ * });
+ */
+export function useGetBookRatingQuery(baseOptions: Apollo.QueryHookOptions<GetBookRatingQuery, GetBookRatingQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetBookRatingQuery, GetBookRatingQueryVariables>(GetBookRatingDocument, options);
+      }
+export function useGetBookRatingLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetBookRatingQuery, GetBookRatingQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetBookRatingQuery, GetBookRatingQueryVariables>(GetBookRatingDocument, options);
+        }
+export type GetBookRatingQueryHookResult = ReturnType<typeof useGetBookRatingQuery>;
+export type GetBookRatingLazyQueryHookResult = ReturnType<typeof useGetBookRatingLazyQuery>;
+export type GetBookRatingQueryResult = Apollo.QueryResult<GetBookRatingQuery, GetBookRatingQueryVariables>;
 export const HaveIRatedBookYetDocument = gql`
     query HaveIRatedBookYet($volumeId: String!) {
   haveIRatedAlready(volumeId: $volumeId)

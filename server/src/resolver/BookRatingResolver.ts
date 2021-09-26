@@ -14,13 +14,37 @@ import {
 } from "../common/types";
 import BookRating from "../entity/BookRating";
 import isAuthenticated from "../middleware/isAuthenticated";
-import createBookReviewValidation from "../validation/createBookReviewValidation";
+import bookRatingValidation from "../validation/bookRatingValidation";
 
 @ObjectType()
 class BookRatingResponse extends ResolverResponse(BookRating) {}
 
 @Resolver(() => BookRating)
 class BookRatingResolver {
+  @Query(() => BookRating, { nullable: true })
+  async getBookRating(
+    @Ctx() { req }: CustomContext,
+    @Arg("volumeId") volumeId: string
+  ): Promise<BookRating | null> {
+    try {
+      if (!req.session.userId) {
+        return null;
+      }
+
+      const bookRating = await BookRating.findOne({
+        where: { creatorId: req.session.userId, volumeId },
+      });
+      if (!bookRating) {
+        return null;
+      }
+
+      return bookRating;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
   @Mutation(() => BookRatingResponse)
   @UseMiddleware(isAuthenticated)
   async createBookRating(
@@ -31,7 +55,7 @@ class BookRatingResolver {
     let bookRating: BookRating | undefined;
 
     // Validate input
-    const errors = createBookReviewValidation(bookRatingInput);
+    const errors = bookRatingValidation(bookRatingInput);
     if (errors) {
       return { errors };
     }
@@ -75,6 +99,52 @@ class BookRatingResolver {
         };
       }
 
+      console.error(error);
+    }
+
+    return { item: bookRating };
+  }
+
+  @Mutation(() => BookRatingResponse)
+  @UseMiddleware(isAuthenticated)
+  async editBookRating(
+    @Ctx() { req }: CustomContext,
+    @Arg("bookRatingInput") bookRatingInput: BookRatingInput
+  ): Promise<BookRatingResponse> {
+    let bookRating: BookRating | undefined;
+
+    const errors = bookRatingValidation(bookRatingInput);
+    if (errors) {
+      return { errors };
+    }
+
+    try {
+      // Validate input
+      const ratingFound = await BookRating.findOne({
+        where: {
+          volumeId: bookRatingInput.volumeId,
+          creatorId: req.session.userId,
+        },
+      });
+
+      if (!ratingFound) {
+        return {
+          errors: [
+            {
+              field: "volumeId",
+              message:
+                "book rating with that volume id for user could not be found",
+            },
+          ],
+        };
+      }
+
+      ratingFound.rating = bookRatingInput.rating;
+      ratingFound.status = bookRatingInput.status;
+      ratingFound.title = bookRatingInput.title;
+
+      bookRating = await ratingFound.save();
+    } catch (error) {
       console.error(error);
     }
 

@@ -1,5 +1,5 @@
-mutation CreateBookReview($input: BookRatingInput!) {
-  createBookRating(bookRatingInput: $input) {
+mutation EditBookRating($editInput: BookRatingInput!) {
+  editBookRating(bookRatingInput: $editInput) {
     errors {
       field
       message
@@ -10,6 +10,7 @@ mutation CreateBookReview($input: BookRatingInput!) {
       title
       rating
       status
+      creatorId
     }
   }
 }
