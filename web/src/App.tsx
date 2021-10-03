@@ -1,10 +1,10 @@
-import * as React from "react";
+import React from "react";
 import { ChakraProvider, theme } from "@chakra-ui/react";
-import Layout from "./components/Layout";
-import Navigation from "./components/Navigation/Navigation";
 import { BrowserRouter } from "react-router-dom";
-import Routes from "./components/Navigation/Routes";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
+import Navigation from "./components/Navigation/Navigation";
+import Layout from "./components/Layout";
+import Routes from "./components/Navigation/Routes";
 
 const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),

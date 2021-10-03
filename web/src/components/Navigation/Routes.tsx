@@ -1,9 +1,7 @@
 import React from "react";
 import { Switch } from "react-router-dom";
 import { Redirect, Route } from "react-router";
-import Auth from "../../pages/Auth";
-import BookSearch from "../../pages/BookSearch";
-import Book from "../../pages/Book";
+import { AuthPage, BookPage, ExplorePage } from "../../pages";
 import { useMeQuery } from "../../generated/graphql";
 
 const Routes = () => {
@@ -17,7 +15,7 @@ const Routes = () => {
 
   const unauthenticatedRoutes = [
     <Route path="/authenticate" exact key="authenticate">
-      <Auth />
+      <AuthPage />
     </Route>,
     <Route path="/" key="redirect-to-authentication">
       <Redirect to="/authenticate" />
@@ -27,10 +25,10 @@ const Routes = () => {
   return (
     <Switch>
       <Route path="/books/:id">
-        <Book />
+        <BookPage />
       </Route>
       <Route path="/books" exact>
-        <BookSearch />
+        <ExplorePage />
       </Route>
       {data?.me ? authenticatedRoutes : unauthenticatedRoutes}
     </Switch>

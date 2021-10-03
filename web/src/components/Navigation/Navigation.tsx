@@ -13,6 +13,7 @@ import {
   MenuItem,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
+import { clearSearchedSessionStorage } from "../../common/util/sessionStorageBookSearch";
 
 const Navigation = () => {
   const apolloClient = useApolloClient();
@@ -70,7 +71,9 @@ const Navigation = () => {
 
       <Spacer />
       <Flex mr="24" alignItems="center">
-        <NavItem path="/books">Explore Books</NavItem>
+        <NavItem path="/books" onClick={() => clearSearchedSessionStorage()}>
+          Explore Books
+        </NavItem>
         {authenticatedNavItems}
       </Flex>
     </Flex>

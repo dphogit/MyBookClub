@@ -1,8 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
-import { Box, Divider, Grid, Heading, Stack, Text } from "@chakra-ui/layout";
-import { Book as BookType } from "../common/types";
-import ImageDisplay from "../components/Book/ImageDisplay";
 import {
   Link,
   Button,
@@ -15,15 +11,17 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-  FormControl,
   Select,
-  FormLabel,
   FormHelperText,
-  FormErrorMessage,
   ButtonProps,
   useToast,
+  Box,
+  Divider,
+  Grid,
+  Heading,
+  Stack,
+  Text,
 } from "@chakra-ui/react";
-import parse from "react-html-parser";
 import { AddIcon, EditIcon, LockIcon } from "@chakra-ui/icons";
 import {
   useCreateBookRatingMutation,
@@ -31,44 +29,49 @@ import {
   BookRatingInput,
   useMeQuery,
   useGetBookRatingQuery,
-} from "../generated/graphql";
-import { SubmitHandler, useForm } from "react-hook-form";
-import sanitzeHtml from "sanitize-html";
-import {
+  GetBookRatingDocument,
+  GetBookRatingQuery,
   useEditBookRatingMutation,
   useDeleteBookRatingMutation,
 } from "../generated/graphql";
+import { ApolloCache } from "@apollo/client";
+import { useParams } from "react-router";
+import { SubmitHandler, useForm } from "react-hook-form";
+import parse from "react-html-parser";
+import sanitzeHtml from "sanitize-html";
+import { useFetch } from "../hooks";
+import { getBookByVolumeIdURL, successToastOptions } from "../common/util";
+import { statuses, ratings } from "../common/data/options";
 import {
-  GetBookRatingDocument,
-  GetBookRatingQuery,
-} from "../generated/graphql";
+  Book as BookType,
+  BookResponseItem,
+  ResponseError,
+} from "../common/types";
+import {
+  ModalFormControl,
+  ModalSelectOptions,
+  ImageDisplay,
+} from "../components";
 
 interface Params {
   id: string;
 }
-
 type AddBookData = {
   status: BookStatus;
   rating: number | null;
 };
-
 type ReviewState = "UNAUTHENTICATED" | "EDIT" | "ADD";
 
 const ADD_BOOK_REVIEW_FORM_ID = "add-book-review";
 
 const Book = () => {
+  // HOOKS
   const { id: volumeId } = useParams<Params>();
-
-  const [book, setBook] = useState<BookType | null>(null);
   const [reviewState, setReviewState] =
     useState<ReviewState>("UNAUTHENTICATED");
-
   const openModalRef = useRef<HTMLButtonElement>(null);
-
   const { isOpen, onOpen, onClose } = useDisclosure();
-
   const toast = useToast();
-
   const {
     register,
     handleSubmit,
@@ -80,10 +83,12 @@ const Book = () => {
   } = useForm<AddBookData>();
   const watchSelectStatus = watch("status");
 
+  // MUTATION HOOKS
   const [createBookRatingMutation] = useCreateBookRatingMutation();
   const [editBookRatingMutation] = useEditBookRatingMutation();
   const [deleteBookRatingMutation] = useDeleteBookRatingMutation();
 
+  // QUERY HOOKS
   const { data: meData, loading: meLoading } = useMeQuery();
   const { data: bookRatingData } = useGetBookRatingQuery({
     variables: {
@@ -91,25 +96,15 @@ const Book = () => {
     },
   });
 
-  useEffect(() => {
-    const url = `https://www.googleapis.com/books/v1/volumes/${volumeId}?fields=id,volumeInfo(title,authors,description,publishedDate,pageCount,infoLink,categories,publisher,imageLinks/thumbnail)`;
-
-    try {
-      fetch(url).then(async (res) => {
-        const data: BookType = await res.json();
-
-        console.log(data);
-        setBook(data);
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  }, [volumeId]);
+  const {
+    state: { data: book, error, isLoading },
+  } = useFetch<BookType>(getBookByVolumeIdURL(volumeId));
 
   useEffect(() => {
     // User already has rated, if this is the case they must also be authenticated
+    // Preset the modal values here
     if (bookRatingData?.getBookRating) {
-      setReviewState("EDIT"); // Preset the modal values here
+      setReviewState("EDIT");
       setValue("status", bookRatingData.getBookRating.status);
       setValue("rating", bookRatingData.getBookRating.rating as number | null);
       return;
@@ -121,15 +116,35 @@ const Book = () => {
     }
   }, [bookRatingData, meData, setValue]);
 
+  // Watch for changes to the status user cannot submit a rating score when book is being planned to read
   useEffect(() => {
     if (watchSelectStatus === BookStatus.Plan) {
       setValue("rating", null);
     }
   }, [watchSelectStatus, setValue]);
 
-  if (!book) {
+  if (error) {
+    return <Heading>Error Occured</Heading>;
+  }
+
+  if (isLoading || !book) {
     return <Heading>Loading...</Heading>;
   }
+
+  const handleUserValidationErrors = (
+    responseErrors: ResponseError[],
+    volumeIdMsg: string
+  ) => {
+    responseErrors.forEach(({ field, message }) => {
+      if (field === "rating" || field === "status") {
+        // console.log(errors);
+        setError(field, { message });
+      }
+      if (field === "volumeId") {
+        throw new Error(volumeIdMsg);
+      }
+    });
+  };
 
   const handleReviewSubmit: SubmitHandler<AddBookData> = async (values) => {
     const bookRatingInput: BookRatingInput = {
@@ -144,36 +159,17 @@ const Book = () => {
         const createBookResponse = await createBookRatingMutation({
           variables: { input: bookRatingInput },
           update: (cache, { data }) => {
-            // Update the cache to immediately show changes on modal button
-            if (!data || !data.createBookRating.item) {
-              return;
+            if (data && data.createBookRating.item) {
+              writeQueryToCache(cache, data.createBookRating.item); // Update the cache to immediately reflect changes upon opening modal
             }
-
-            cache.writeQuery<GetBookRatingQuery>({
-              query: GetBookRatingDocument,
-              variables: { volumeId },
-              data: {
-                getBookRating: {
-                  ...data.createBookRating.item,
-                  __typename: "BookRating",
-                },
-              },
-            });
           },
         });
 
         // Server side validation of user errors
         if (createBookResponse.data?.createBookRating.errors) {
-          createBookResponse.data.createBookRating.errors.forEach(
-            ({ field, message }) => {
-              if (field === "rating" || field === "status") {
-                setError(field, { message });
-              }
-              if (field === "volumeId") {
-                // Client side should protect this error from occuring
-                throw new Error("VolumeId already exists in your list");
-              }
-            }
+          handleUserValidationErrors(
+            createBookResponse.data.createBookRating.errors,
+            "VolumeId already exists in your list"
           );
           return;
         }
@@ -183,38 +179,17 @@ const Book = () => {
         const editBookResponse = await editBookRatingMutation({
           variables: { editInput: bookRatingInput },
           update: (cache, { data }) => {
-            // Update the cache to immediately reflect changes upon opening modal
-            if (!data || !data.editBookRating.item) {
-              return;
+            if (data && data.editBookRating.item) {
+              writeQueryToCache(cache, data.editBookRating.item); // Update the cache to immediately reflect changes upon opening modal
             }
-
-            cache.writeQuery<GetBookRatingQuery>({
-              query: GetBookRatingDocument,
-              variables: { volumeId },
-              data: {
-                getBookRating: {
-                  ...data.editBookRating.item,
-                  __typename: "BookRating",
-                },
-              },
-            });
           },
         });
 
         // Server side validation of user errors
         if (editBookResponse.data?.editBookRating.errors) {
-          editBookResponse.data.editBookRating.errors.forEach(
-            ({ field, message }) => {
-              if (field === "rating" || field === "status") {
-                setError(field, { message });
-              }
-              if (field === "volumeId") {
-                // Client side should protect this error from occuring
-                throw new Error(
-                  "No book with that volumeId can be found on your list"
-                );
-              }
-            }
+          handleUserValidationErrors(
+            editBookResponse.data.editBookRating.errors,
+            "No book with that volumeId can be found on your list"
           );
           return;
         }
@@ -222,15 +197,9 @@ const Book = () => {
         console.log("Edited: ", editBookResponse.data?.editBookRating.item);
       }
 
-      // Successfully saved review
-      toast({
-        title: reviewState === "ADD" ? "Rating added" : "Rating edited",
-        description: "We've saved your rating",
-        duration: 9000,
-        position: "bottom",
-        status: "success",
-        isClosable: true,
-      });
+      const toastTitle =
+        reviewState === "ADD" ? "Rating added" : "Rating edited";
+      toast(successToastOptions(toastTitle, "We've saved your rating"));
       onClose();
     } catch (error) {
       console.error(error);
@@ -252,16 +221,25 @@ const Book = () => {
 
     reset({ rating: null, status: undefined }); // Reset the values of the form
 
-    toast({
-      title: "Rating removed",
-      description: "We've removed your rating",
-      duration: 9000,
-      position: "bottom",
-      status: "success",
-      isClosable: true,
-    });
+    toast(successToastOptions("Rating removed", "We've removed your rating"));
     console.log("Removed: ", volumeId);
     onClose();
+  };
+
+  const writeQueryToCache = (
+    cache: ApolloCache<any>,
+    item: BookResponseItem
+  ) => {
+    cache.writeQuery<GetBookRatingQuery>({
+      query: GetBookRatingDocument,
+      variables: { volumeId },
+      data: {
+        getBookRating: {
+          ...item,
+          __typename: "BookRating",
+        },
+      },
+    });
   };
 
   // Adapt button depending on what their review status of the book is.
@@ -287,7 +265,6 @@ const Book = () => {
       };
       break;
     default:
-      console.log("Error is here");
       throw new Error("Review State Error"); // Should not reach here
   }
 
@@ -355,37 +332,32 @@ const Book = () => {
               id={ADD_BOOK_REVIEW_FORM_ID}
               onSubmit={handleSubmit(handleReviewSubmit)}
             >
-              <FormControl isRequired my="4">
-                <FormLabel>Status</FormLabel>
+              <ModalFormControl
+                label="Status"
+                isRequired
+                errorMessage={errors.status?.message}
+              >
                 <Select
                   placeholder="Select Status"
                   {...register("status", {
                     required: { value: true, message: "Status is required" },
                   })}
                 >
-                  <option value={BookStatus.Current}>Currently Reading</option>
-                  <option value={BookStatus.Complete}>Completed</option>
-                  <option value={BookStatus.Plan}>Plan to Read</option>
-                  <option value={BookStatus.Hold}>On Hold</option>
-                  <option value={BookStatus.Drop}>Dropped</option>
+                  <ModalSelectOptions options={statuses} />
                 </Select>
-                {errors.rating && (
-                  <FormErrorMessage>{errors.rating.message}</FormErrorMessage>
-                )}
-              </FormControl>
+              </ModalFormControl>
               <Divider />
-              <FormControl my="4">
-                <FormLabel>Overall Rating</FormLabel>
+              <ModalFormControl
+                isRequired={false}
+                label="Overall Rating"
+                errorMessage={errors.rating?.message}
+              >
                 <Select
-                  placeholder="--"
+                  defaultValue={1}
                   {...register("rating")}
                   disabled={watchSelectStatus === BookStatus.Plan}
                 >
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={4}>4</option>
-                  <option value={5}>5</option>
+                  <ModalSelectOptions options={ratings} />
                 </Select>
                 {watchSelectStatus === BookStatus.Plan && (
                   <FormHelperText>
@@ -393,10 +365,7 @@ const Book = () => {
                     Read"
                   </FormHelperText>
                 )}
-                {errors.status && (
-                  <FormErrorMessage>{errors.status.message}</FormErrorMessage>
-                )}
-              </FormControl>
+              </ModalFormControl>
             </form>
           </ModalBody>
           <ModalFooter>

@@ -24,7 +24,13 @@ const BookSearchCard = ({ book }: BookSearchCardProps) => {
 
   return (
     <LinkBox as="div">
-      <Flex rounded="lg" boxShadow="xl" margin="4">
+      <Flex
+        rounded="lg"
+        boxShadow="xl"
+        margin="4"
+        h="175px"
+        _hover={{ transform: "scale(1.05)" }}
+      >
         <Stack direction="column" p="4" w="60%" justifyContent="center">
           <LinkOverlay as={Link} to={`/books/${id}`}>
             <Heading fontSize="1rem" isTruncated>

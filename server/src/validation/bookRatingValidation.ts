@@ -11,7 +11,10 @@ const registerValidation = ({
   rating,
   status,
 }: BookRatingInput): ValidationResponse => {
-  if (rating < MINIMUM_RATING || rating > MAXIMUM_RATING) {
+  if (
+    status != BookStatus.PLAN &&
+    (rating < MINIMUM_RATING || rating > MAXIMUM_RATING)
+  ) {
     return [
       {
         field: "rating",

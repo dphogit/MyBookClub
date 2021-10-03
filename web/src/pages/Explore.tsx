@@ -1,12 +1,22 @@
-import React, { useState } from "react";
-import { FormControl, FormLabel } from "@chakra-ui/form-control";
-import { Input } from "@chakra-ui/input";
-import { Box, SimpleGrid, Text } from "@chakra-ui/layout";
-import { SubmitHandler, useForm } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Box,
+  SimpleGrid,
+  Text,
+} from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
-import { Button } from "@chakra-ui/button";
-import BookSearchCard from "../components/Book/BookSearchCard";
-import { Book } from "../common/types";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { Book, SearchedSessionStorage } from "../common/types";
+import {
+  getSearchedSessionStorage,
+  setSearchedSessionStorage,
+  getSearchedBookTitlesURL,
+} from "../common/util";
+import { BookSearchCard } from "../components";
 
 interface SearchInput {
   searched: string;
@@ -23,20 +33,35 @@ const BookSearch = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { isSubmitting },
-  } = useForm();
+  } = useForm<SearchInput>();
+
+  useEffect(() => {
+    // See session storage to see if the user is intending to
+    // navigate to what they searched before (e.g. pressing back)
+    // Note: storage is cleared when pressed on the nav link
+    const stored = getSearchedSessionStorage();
+    if (stored) {
+      const data: SearchedSessionStorage = JSON.parse(stored);
+      setBooks(data.books);
+      setValue("searched", data.query);
+    }
+  }, [setValue]);
 
   const handleSearch: SubmitHandler<SearchInput> = async ({ searched }) => {
     try {
-      const trimmedSearch = searched.trim();
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${trimmedSearch}+intitle:${trimmedSearch}&maxResults=12&fields=kind,items(id,volumeInfo(title,authors,description,publishedDate,pageCount,infoLink,categories,publisher,imageLinks/thumbnail))`;
-
-      const response = await fetch(url);
+      const response = await fetch(getSearchedBookTitlesURL(searched));
       const data: JSON = await response.json();
 
       if (data.items) {
         setBooks(data.items);
         setIsNotFound(false);
+
+        setSearchedSessionStorage({
+          books: data.items,
+          query: searched.trim(),
+        });
       } else {
         setBooks([]);
         setIsNotFound(true);

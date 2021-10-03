@@ -5,9 +5,10 @@ import { NavLink } from "react-router-dom";
 interface NavLinkProps {
   path: string;
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
-const NavItem = ({ path, children }: NavLinkProps) => {
+const NavItem = ({ path, children, onClick }: NavLinkProps) => {
   return (
     <Link
       as={NavLink}
@@ -18,6 +19,7 @@ const NavItem = ({ path, children }: NavLinkProps) => {
       style={{ textUnderlineOffset: "0.375rem" }}
       to={path}
       exact
+      onClick={onClick}
     >
       {children}
     </Link>
